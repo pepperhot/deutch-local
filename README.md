@@ -36,6 +36,7 @@ Lancer sur l’ordinateur hôte :
 
 ```bash
 python server.py
+```
 
 ### 2. client
 
@@ -43,3 +44,4 @@ Lancer sur l’ordinateur client :
 
 ```bash
 python client.py
+```
