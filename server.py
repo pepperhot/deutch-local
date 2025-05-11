@@ -72,6 +72,21 @@ def gerer_client(client, addr, joueur_id):
                         tour_actuel = (tour_actuel + 1) % len(clients)
                         envoyer_etat()
                         afficher_etat_serveur()
+            elif message['type'] == 'jeter':
+                source = message['source']
+                with lock:
+                    if joueur_id == tour_actuel:
+                        if source == 'pioche' and pioche:
+                            carte = pioche.pop(0)
+                            fosse.append(carte)
+                        elif source == 'fosse' and fosse:
+                            carte = fosse.pop()
+                            fosse.append(carte)
+
+                        tour_actuel = (tour_actuel + 1) % len(clients)
+                        envoyer_etat()
+                        afficher_etat_serveur()
+
         except:
             break
     client.close()
