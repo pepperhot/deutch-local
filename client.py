@@ -66,7 +66,6 @@ try:
                             command=lambda idx=i: cliquer_carte(idx))
             btn.grid(row=0, column=i, padx=5)
 
-        # N'affiche plus la carte de la pioche
         etat_pioche.set("Pioche : ❓")
         etat_fosse.set(f"Fosse : {fosse[-1] if fosse else 'vide'}")
 
@@ -77,8 +76,10 @@ try:
             dame_carte = ""
             if pioche and pioche[0].startswith("D") and pioche[0] not in dame_used:
                 dame_carte = pioche[0]
+                print("Dame de pioche :", dame_carte)
             elif fosse and fosse[-1].startswith("D") and fosse[-1] not in dame_used:
                 dame_carte = fosse[-1]
+                print("Dame de fosse :", dame_carte)
 
             if dame_carte:
                 for i, visible in enumerate(visible_main):
@@ -86,38 +87,45 @@ try:
                         btn = tk.Button(btn_frame, text=f"👁 Voir {i + 1}",
                                         command=lambda idx=i, dc=dame_carte: utiliser_pouvoir_dame(idx, dc))
                         btn.grid(row=1, column=i, pady=5)
-        if carte_en_attente in ["pioche", "fosse"]:
-            for i in range(len(main_joueur)):
-                action_frame = tk.Frame(btn_frame)
-                action_frame.grid(row=1, column=i, pady=5)
+            if numero_joueur == tour_actuel and carte_en_attente is not None:
+                action_frame = tk.Frame(main_frame)
+                action_frame.pack(pady=5)
+                tk.Button(action_frame, text="🗑 Jeter la carte", command=jeter_carte).pack()
 
-                tk.Button(action_frame, text="🔄", command=lambda idx=i: remplacer_carte(idx)).pack(side="left")
-                if i == 0:
-                    # Un seul bouton pour jeter en fosse
-                    tk.Button(action_frame, text="🗑", command=jeter_carte).pack(side="left")
 
     def remplacer_carte(index):
         global carte_en_attente
         s.send(json.dumps({'type': 'remplacement', 'index': index, 'source': carte_en_attente}).encode())
         carte_en_attente = None
-        btn_pioche.config(state="normal")
-        btn_fosse.config(state="normal")
 
     def jeter_carte():
         global carte_en_attente
-        s.send(json.dumps({'type': 'jeter', 'source': carte_en_attente}).encode())
-        carte_en_attente = None
-        btn_pioche.config(state="normal")
-    btn_fosse.config(state="normal")
 
+        if numero_joueur != tour_actuel or carte_en_attente is None:
+            return
+        if carte_en_attente == 'pioche' and pioche:
+            carte_jetee = pioche[0]
+            etat_pioche.set(f"Jetée : {carte_jetee}")
+        elif carte_en_attente == 'fosse' and fosse:
+            carte_jetee = fosse[-1]
+            etat_fosse.set(f"Jetée : {carte_jetee}")
+        else:
+            return
+        s.send(json.dumps({'type': 'jeter', 'source': carte_en_attente, 'carte': carte_jetee
+        }).encode())
+        carte_en_attente = None
+        root.after(2000, maj_affichage)
 
     def utiliser_pouvoir_dame(index, dame_carte):
-        global dame_used, visible_main, tour_actuel
+        global dame_used, visible_main, carte_en_attente
+
         visible_main[index] = True
         dame_used.append(dame_carte)
         maj_affichage()
         root.after(3000, lambda: masquer_temporairement(index))
-        tour_actuel = None
+        s.send(json.dumps({'type': 'dame', 'source': dame_carte, 'carte': dame_carte}).encode())
+        carte_en_attente = None
+
 
     def masquer_temporairement(index):
         visible_main[index] = False
@@ -131,8 +139,6 @@ try:
             maj_affichage()
             root.after(5000, cacher_cartes)
             selection_initiale = False
-            btn_pioche.config(state="normal")
-            btn_fosse.config(state="normal")
             return
 
         if numero_joueur != tour_actuel or carte_en_attente is None:
@@ -154,8 +160,7 @@ try:
         if source == "fosse" and not fosse:
             return
         carte_en_attente = source
-        btn_pioche.config(state="disabled")
-        btn_fosse.config(state="disabled")
+
 
         # Affichage temporaire de la carte de pioche
         if source == "pioche" and pioche:

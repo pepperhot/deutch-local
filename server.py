@@ -72,20 +72,45 @@ def gerer_client(client, addr, joueur_id):
                         tour_actuel = (tour_actuel + 1) % len(clients)
                         envoyer_etat()
                         afficher_etat_serveur()
+
             elif message['type'] == 'jeter':
                 source = message['source']
+                carte = message.get('carte')
                 with lock:
                     if joueur_id == tour_actuel:
                         if source == 'pioche' and pioche:
                             carte = pioche.pop(0)
                             fosse.append(carte)
+                            print(f"Joueur {joueur_id} a jeté la carte {carte} de la pioche.")
                         elif source == 'fosse' and fosse:
                             carte = fosse.pop()
                             fosse.append(carte)
-
+                            print(f"Joueur {joueur_id} a rejeté la carte {carte} de la fosse.")
+                        else:
+                            print(f"Source invalide ou vide pour joueur {joueur_id}: {source}")
+                            return
                         tour_actuel = (tour_actuel + 1) % len(clients)
                         envoyer_etat()
                         afficher_etat_serveur()
+
+
+            elif message['type'] == 'dame':
+                source = message['source']
+                carte = message.get('carte')
+                if not carte:
+                    print("Erreur : carte non spécifiée dans le message dame.")
+                    continue
+
+                print(f"la dame {carte}")
+                with lock:
+                    if joueur_id == tour_actuel:
+                        if carte.startswith('D'):
+                            fosse.append(carte)
+                            tour_actuel = (tour_actuel + 1) % len(clients)
+                            envoyer_etat()
+                            afficher_etat_serveur()
+                    else:
+                        print(f"Le joueur {addr} a essayé de jouer une carte alors ce n'est pas son tour.")
 
         except:
             break
