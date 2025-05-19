@@ -18,21 +18,25 @@ clients = []
 pioche = cartes[:-1]
 fosse = [cartes[-1]]
 tour_actuel = 0
+total_mains = {}
 lock = threading.Lock()
 
 def envoyer_etat():
+    joueurs_info = {f"Joueur {i}": mains[addr] for i, (client, addr) in enumerate(clients)}
     for i, (client, addr) in enumerate(clients):
         infos = {
             'main': mains[addr],
             'pioche': pioche,
             'fosse': fosse,
             'tour': tour_actuel,
-            'joueur': i
+            'joueur': i,
+            'joueurs': joueurs_info
         }
         try:
             client.send(json.dumps(infos).encode())
         except:
             continue
+    
 
 def afficher_etat_serveur():
     print("\n=== ÉTAT ACTUEL DU JEU ===")
@@ -111,6 +115,30 @@ def gerer_client(client, addr, joueur_id):
                             tour_actuel = (tour_actuel + 1) % len(clients)
                             envoyer_etat()
                             afficher_etat_serveur()
+
+            elif message['type'] == 'valet':
+                carte = message.get('carte')
+                victime = message['victime']
+                idx_victime = message['index']
+                carte_attaquant = message.get('carte_attaquant')
+
+                if carte.startswith('V'):
+                    with lock:
+                        if joueur_id == tour_actuel:
+                            if carte_attaquant in mains[addr]:
+                                idx_attaquant = mains[addr].index(carte_attaquant)
+                                mains[addr].remove(carte_attaquant)
+                                carte_victime = mains[victime][idx_victime]
+                                mains[victime][idx_victime] = carte_attaquant
+                                mains[addr].insert(idx_attaquant, carte_victime)
+                                fosse.append(carte)
+
+                        tour_actuel = (tour_actuel + 1) % len(clients)
+                        envoyer_etat()
+                        afficher_etat_serveur()
+
+
+
 
             elif message['type'] == 'mouton':
                 index = message['index']

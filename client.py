@@ -18,7 +18,9 @@ selection_initiale = True
 numero_joueur = None
 tour_actuel = None
 dame_used = []
+valet_used = []
 action_effectuee = False
+joueurs = {}
 
 root = tk.Tk()
 root.title("Jeu de mémoire - Client")
@@ -32,6 +34,12 @@ main_frame.pack(padx=10, pady=10)
 
 top_frame = tk.Frame(main_frame)
 top_frame.pack(pady=(0, 10))
+
+joueurs_frame_left = tk.Frame(main_frame)
+joueurs_frame_left.pack(side='left', anchor='n', padx=10, pady=10)
+
+joueurs_frame_right = tk.Frame(main_frame)
+joueurs_frame_right.pack(side='right', anchor='n', padx=10, pady=10)
 
 tk.Label(top_frame, textvariable=etat_pioche).grid(row=0, column=0, padx=10)
 tk.Label(top_frame, textvariable=etat_fosse).grid(row=0, column=1, padx=10)
@@ -59,7 +67,31 @@ try:
                 widget.destroy()
         for widget in btn_frame.winfo_children():
             widget.destroy()
+        
+        for widget in joueurs_frame_left.winfo_children():
+            widget.destroy()
 
+        if joueurs:
+            autres_joueurs = [(nom, main) for nom, main in joueurs.items() if nom != f"Joueur {numero_joueur}"]
+            moitie = len(autres_joueurs) // 2 + len(autres_joueurs) % 2
+            ligne_left = 0
+            ligne_right = 0
+
+            for nom, main in autres_joueurs[:moitie]:
+                tk.Label(joueurs_frame_left, text=nom, font=("Arial", 12, "bold")).grid(row=ligne_left, column=0, sticky='w')
+                ligne_left += 1
+                for i, carte in enumerate(main):
+                    tk.Button(joueurs_frame_left, text=str(carte), font=("Arial", 12), command=lambda idx=i, joueur=nom: transition(idx, joueur)).grid(row=ligne_left, column=0, sticky='w', padx=10)
+                    ligne_left += 1
+
+            for nom, main in autres_joueurs[moitie:]:
+                tk.Label(joueurs_frame_right, text=nom, font=("Arial", 12, "bold")).grid(row=ligne_right, column=0, sticky='e')
+                ligne_right += 1
+                for i, carte in enumerate(main):
+                    tk.Button(joueurs_frame_right, text=str(carte), font=("Arial", 12), command=lambda idx=i, joueur=nom: transition(idx, joueur)).grid(row=ligne_right, column=0, sticky='e', padx=10)
+                    ligne_right += 1
+
+                
         for i, visible in enumerate(visible_main):
             if not visible:
                 tk.Button(btn_frame, text=f"↑", command=lambda idx=i: mouton(idx)).grid(row=0, column=i, pady=5)
@@ -79,11 +111,20 @@ try:
 
         if numero_joueur == tour_actuel and carte_en_attente is None:
             dame_carte = ""
+            valet_carte = ""
             if pioche and pioche[0].startswith("D") and pioche[0] not in dame_used:
                 dame_carte = pioche[0]
             if fosse and fosse[-1].startswith("D") and fosse[-1] not in dame_used:
                 dame_carte = fosse[-1]
-
+                
+            if pioche and pioche[0].startswith("V") and pioche[0] not in valet_used:
+                valet_carte = pioche[0]
+            if fosse and fosse[-1].startswith("V") and fosse[-1] not in valet_used:
+                valet_carte = fosse[-1]
+            
+            if valet_carte:
+                tk.Label(btn_frame, text="🔄",).grid(row=2, column=i, pady=5)
+                                  
             if dame_carte:
                 for i, visible in enumerate(visible_main):
                     if not visible:
@@ -135,6 +176,24 @@ try:
         s.send(json.dumps(envoi).encode())
         carte_en_attente = None
 
+    def transition(idx_victime, joueur_victime):
+        def choisir_carte_a_echanger(idx_attaquant):
+            envoi = {
+                'type': 'valet',
+                'carte': carte_en_attente,
+                'victime': joueur_victime,
+                'index_victime': idx_victime,
+                'index_attaquant': idx_attaquant,
+                'carte_attaquant': main_joueur[idx_attaquant]
+            }
+            s.send(json.dumps(envoi).encode())
+            maj_affichage()
+            choix.destroy()
+        choix = tk.Toplevel(root)
+        choix.title("Choisissez une carte à échanger")
+        for i, carte in enumerate(main_joueur):
+            tk.Button(choix, text=carte, command=lambda idx=i: choisir_carte_a_echanger(idx)).pack(padx=5, pady=5)
+    
     def masquer_temporairement(index):
         visible_main[index] = False
         maj_affichage()
@@ -180,7 +239,7 @@ try:
             root.after(10000, lambda: etat_pioche.set("Pioche : ❓"))
 
     def maj_donnees():
-        global main_joueur, pioche, fosse, numero_joueur, tour_actuel, visible_main, action_effectuee
+        global main_joueur, pioche, fosse, numero_joueur, tour_actuel, visible_main, action_effectuee, joueurs
         ancien_tour = None
         while True:
             try:
@@ -195,6 +254,12 @@ try:
                 tour_actuel = infos['tour']
                 numero_joueur = infos['joueur']
                 visible_main = visible_main[:len(main_joueur)]
+                joueurs = infos.get('joueurs', {})
+                """                
+                print(joueurs)
+                for nom, main in joueurs.items():
+                    if nom != f"Joueur {numero_joueur}":
+                        print(f"{nom} : {main}")"""
                 while len(visible_main) < len(main_joueur):
                     visible_main.append(False)
 
