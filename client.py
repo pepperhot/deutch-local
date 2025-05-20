@@ -111,19 +111,12 @@ try:
 
         if numero_joueur == tour_actuel and carte_en_attente is None:
             dame_carte = ""
-            valet_carte = ""
+
             if pioche and pioche[0].startswith("D") and pioche[0] not in dame_used:
                 dame_carte = pioche[0]
             if fosse and fosse[-1].startswith("D") and fosse[-1] not in dame_used:
                 dame_carte = fosse[-1]
-                
-            if pioche and pioche[0].startswith("V") and pioche[0] not in valet_used:
-                valet_carte = pioche[0]
-            if fosse and fosse[-1].startswith("V") and fosse[-1] not in valet_used:
-                valet_carte = fosse[-1]
-            
-            if valet_carte:
-                tk.Label(btn_frame, text="🔄",).grid(row=2, column=i, pady=5)
+
                                   
             if dame_carte:
                 for i, visible in enumerate(visible_main):
@@ -177,10 +170,22 @@ try:
         carte_en_attente = None
 
     def transition(idx_victime, joueur_victime):
-        def choisir_carte_a_echanger(idx_attaquant):
+        valet_carte = ""
+        if pioche and pioche[0].startswith("V") and pioche[0] not in valet_used:
+            valet_carte = pioche[0]
+        elif fosse and fosse[-1].startswith("V") and fosse[-1] not in valet_used:
+            valet_carte = fosse[-1]
+
+        if not valet_carte:
+            return
+        
+        global carte_en_attente
+        carte_en_attente = valet_carte
+
+        def utiliser_pouvoir_valet(idx_attaquant):
             envoi = {
                 'type': 'valet',
-                'carte': carte_en_attente,
+                'carte': valet_carte,
                 'victime': joueur_victime,
                 'index_victime': idx_victime,
                 'index_attaquant': idx_attaquant,
@@ -188,11 +193,14 @@ try:
             }
             s.send(json.dumps(envoi).encode())
             maj_affichage()
-            choix.destroy()
-        choix = tk.Toplevel(root)
-        choix.title("Choisissez une carte à échanger")
-        for i, carte in enumerate(main_joueur):
-            tk.Button(choix, text=carte, command=lambda idx=i: choisir_carte_a_echanger(idx)).pack(padx=5, pady=5)
+
+        for widget in btn_frame.winfo_children():
+            widget.destroy()
+
+        for i, visible in enumerate(visible_main):
+            if not visible:
+                tk.Button(btn_frame, text="🔄", command=lambda idx=i: utiliser_pouvoir_valet(idx)).grid(row=2, column=i, pady=5)
+
     
     def masquer_temporairement(index):
         visible_main[index] = False
@@ -255,11 +263,6 @@ try:
                 numero_joueur = infos['joueur']
                 visible_main = visible_main[:len(main_joueur)]
                 joueurs = infos.get('joueurs', {})
-                """                
-                print(joueurs)
-                for nom, main in joueurs.items():
-                    if nom != f"Joueur {numero_joueur}":
-                        print(f"{nom} : {main}")"""
                 while len(visible_main) < len(main_joueur):
                     visible_main.append(False)
 

@@ -19,11 +19,14 @@ pioche = cartes[:-1]
 fosse = [cartes[-1]]
 tour_actuel = 0
 total_mains = {}
+joueur_socket = {}
 lock = threading.Lock()
 
+
 def envoyer_etat():
-    joueurs_info = {f"Joueur {i}": mains[addr] for i, (client, addr) in enumerate(clients)}
+    
     for i, (client, addr) in enumerate(clients):
+        joueurs_info = {f"Joueur {i}": mains[addr] for i, (client, addr) in enumerate(clients)}
         infos = {
             'main': mains[addr],
             'pioche': pioche,
@@ -66,7 +69,6 @@ def gerer_client(client, addr, joueur_id):
                     fosse.clear()
                     fosse.append(carte_fosse)
 
-
             elif message['type'] == 'remplacement':
                 index = message['index']
                 source = message['source']
@@ -102,7 +104,6 @@ def gerer_client(client, addr, joueur_id):
                         envoyer_etat()
                         afficher_etat_serveur()
 
-
             elif message['type'] == 'dame':
                 source = message['source']
                 carte = message.get('carte')
@@ -117,28 +118,26 @@ def gerer_client(client, addr, joueur_id):
                             afficher_etat_serveur()
 
             elif message['type'] == 'valet':
+                print("valet")
                 carte = message.get('carte')
                 victime = message['victime']
-                idx_victime = message['index']
+                idx_victime = message['index_victime']
+                idx_attaquant = message['index_attaquant']
                 carte_attaquant = message.get('carte_attaquant')
-
-                if carte.startswith('V'):
-                    with lock:
-                        if joueur_id == tour_actuel:
-                            if carte_attaquant in mains[addr]:
-                                idx_attaquant = mains[addr].index(carte_attaquant)
-                                mains[addr].remove(carte_attaquant)
-                                carte_victime = mains[victime][idx_victime]
-                                mains[victime][idx_victime] = carte_attaquant
-                                mains[addr].insert(idx_attaquant, carte_victime)
-                                fosse.append(carte)
+                with lock:
+                    if joueur_id == tour_actuel:
+                        mains[addr].remove(carte_attaquant)
+                        carte_victime = mains[joueur_socket[victime]][idx_victime]
+                        mains[joueur_socket[victime]].remove(carte_victime)
+                        mains[addr].insert(idx_attaquant, carte_victime)
+                        mains[joueur_socket[victime]].insert(idx_victime, carte_attaquant)
+                        fosse.append(carte)
+                        print(f"Carte échangée entre {addr} et {victime}: {carte_attaquant} <-> {carte_victime}")
+                        print(f"Main de {addr}: {mains[addr]}")
 
                         tour_actuel = (tour_actuel + 1) % len(clients)
                         envoyer_etat()
                         afficher_etat_serveur()
-
-
-
 
             elif message['type'] == 'mouton':
                 index = message['index']
@@ -177,6 +176,7 @@ def accepter_connexions():
             envoyer_etat()
             afficher_etat_serveur()
             joueur_id = len(clients) - 1
+            joueur_socket[f"Joueur {joueur_id}"] = addr
         threading.Thread(target=gerer_client, args=(client, addr, joueur_id), daemon=True).start()
 
 accepter_connexions()
