@@ -70,18 +70,8 @@ try:
 
     def maj_affichage():
         global main_joueur, visible_main
-        if fin_deutch and numero_joueur in dernier_joueur:
-            score = 0
-            for carte in main_joueur:
-                valeur = carte[:-1]
-                if valeur == 'R' and carte[-1] in red:
-                    score += 0
-                elif valeur == 'R' and carte[-1] in negre:
-                    score += 90
-                else:
-                    score += valeurs_cartes.get(valeur, 0)
-            envoi = {'type' : 'score', 'score' : score}
-            s.send(json.dumps(envoi).encode())
+        btn_deutch.config(state="normal" if len(joueurs) > 1 else "disabled")
+
         if fin_deutch and numero_joueur not in dernier_joueur:
             dernier_joueur.append(numero_joueur)
         if not fin_deutch:
@@ -100,19 +90,22 @@ try:
                 ligne_left = 0
                 ligne_right = 0
 
-                for nom, main in autres_joueurs[:moitie]:
-                    tk.Label(joueurs_frame_left, text=nom, font=("Arial", 12, "bold")).grid(row=ligne_left, column=0, sticky='w')
+            for nom, main in autres_joueurs[:moitie]:
+                color = ("red" if nom == f"Joueur {tour_actuel}" else "black") if not fin_deutch else "green"
+                tk.Label(joueurs_frame_left, text=nom, fg=color, font=("Arial", 12, "bold")).grid(row=ligne_left, column=0, sticky='w')
+                ligne_left += 1
+                for i, carte in enumerate(main):
+                    tk.Button(joueurs_frame_left, text=str(carte), font=("Arial", 12), command=lambda idx=i, joueur=nom: transition(idx, joueur), width=6).grid(row=ligne_left, column=0, sticky='w', padx=10)
                     ligne_left += 1
-                    for i, carte in enumerate(main):
-                        tk.Button(joueurs_frame_left, text=str(carte), font=("Arial", 12), command=lambda idx=i, joueur=nom: transition(idx, joueur)).grid(row=ligne_left, column=0, sticky='w', padx=10)
-                        ligne_left += 1
 
-                for nom, main in autres_joueurs[moitie:]:
-                    tk.Label(joueurs_frame_right, text=nom, font=("Arial", 12, "bold")).grid(row=ligne_right, column=0, sticky='e')
+            for nom, main in autres_joueurs[moitie:]:
+                color = "red" if nom == f"Joueur {tour_actuel}" else "black"  # <-- Défini color ici aussi
+                tk.Label(joueurs_frame_right, text=nom, fg=color, font=("Arial", 12, "bold")).grid(row=ligne_right, column=0, sticky='e')
+                ligne_right += 1
+                for i, carte in enumerate(main):
+                    tk.Button(joueurs_frame_right, text=str(carte), font=("Arial", 12), command=lambda idx=i, joueur=nom: transition(idx, joueur), width=6).grid(row=ligne_right, column=0, sticky='e', padx=10)
                     ligne_right += 1
-                    for i, carte in enumerate(main):
-                        tk.Button(joueurs_frame_right, text=str(carte), font=("Arial", 12), command=lambda idx=i, joueur=nom: transition(idx, joueur)).grid(row=ligne_right, column=0, sticky='e', padx=10)
-                        ligne_right += 1
+
 
                     
             for i, visible in enumerate(visible_main):
@@ -296,17 +289,18 @@ try:
         s.send(json.dumps(envoi).encode())
 
     def afficher_les_resultats(podium):
-        largeur = root.winfo_width()
-        hauteur = root.winfo_height()
-        canvas = tk.Canvas(root, width=largeur, height=hauteur, highlightthickness=0)
-        canvas.place(x=0, y=0, relwidth=1, relheight=1)
-        canvas.create_rectangle(0, 0, largeur, hauteur, fill='gray', stipple='gray25', outline='')
-        canvas.create_text(largeur // 2, 50, text="🏆 Fin de la partie ! 🏆", fill="white", font=("Helvetica", 32, "bold"))
-        for i, (nom, score) in enumerate(podium, start=1):
-            texte = f"{i}. {nom} - {score} pts"
-            canvas.create_text(largeur // 2, 100 + i * 30, text=texte, fill="white", font=("Helvetica", 16))
-        bouton_quitter = tk.Button(canvas, text="Quitter", font=("Helvetica", 14), command=root.destroy)
-        canvas.create_window(largeur // 2, hauteur - 50, window=bouton_quitter)
+            largeur = root.winfo_width() or 800
+            hauteur = root.winfo_height() or 600
+            canvas = tk.Canvas(root, width=largeur, height=hauteur, highlightthickness=0)
+            canvas.place(x=0, y=0, relwidth=1, relheight=1)
+            canvas.create_rectangle(0, 0, largeur, hauteur, fill='gray', stipple='gray25', outline='')
+            canvas.create_text(largeur // 2, 50, text="🏆 Fin de la partie ! 🏆", fill="black", font=("Helvetica", 32, "bold"))
+            for i, (nom, score) in enumerate(podium.items(), start=1):
+                print(nom[-1], numero_joueur, nom[-1] == numero_joueur)
+                canvas.create_text(largeur // 2, 100 + i * 30, text=f"{i}. {nom} - {score} pts {"←you" if nom == f"Joueur {numero_joueur}" else ""}", fill="black", font=("Helvetica", 16))
+            bouton_quitter = tk.Button(canvas, text="Quitter", font=("Helvetica", 14), command=root.destroy)
+            canvas.create_window(largeur // 2, hauteur - 50, window=bouton_quitter)
+
 
     def maj_donnees():
         global main_joueur, pioche, fosse, numero_joueur, tour_actuel, visible_main, action_effectuee, joueurs
@@ -326,6 +320,7 @@ try:
                 visible_main = visible_main[:len(main_joueur)]
                 joueurs = infos.get('joueurs', {})
                 podium = infos['podium']
+                fin = infos['fin']
                 if podium:
                     afficher_les_resultats(podium)
                 while len(visible_main) < len(main_joueur):

@@ -25,7 +25,6 @@ valet_used = []
 ten_used = []
 deutch = False
 dernier_joueur = []
-score_joueur = {}
 classement = {}
 lock = threading.Lock()
 
@@ -49,7 +48,6 @@ def envoyer_etat():
             client.send(json.dumps(infos).encode())
         except:
             continue
-    
 
 def afficher_etat_serveur():
     print("\n=== ÉTAT ACTUEL DU JEU ===")
@@ -187,13 +185,31 @@ def gerer_client(client, addr, joueur_id):
 
             elif message['type'] == 'deutch':
                 deutch_man = message['deutch_man']
-                dernier_joueur.append(deutch_man)
-                tour_actuel = (tour_actuel + 1) % len(clients)
-                envoyer_etat()
-                afficher_etat_serveur()
-            
-            elif message['type'] == 'score':
-                score_joueur[joueur_id] = message['score']
+                if deutch_man not in dernier_joueur:
+                    dernier_joueur.append(deutch_man)
+
+                if len(dernier_joueur) == len(clients):
+                    global deutch
+                    deutch = True
+
+                    def valeur_carte(c):
+                        val = c[:-1]
+                        if val in ['V', 'D']:
+                            return 10
+                        elif val == 'A':
+                            return 1
+                        elif c in ['R♥', 'R♦']:
+                             return 0
+                        elif c in ['R♠', 'R♣']:
+                            return 90
+                        else:
+                            return int(val)
+
+                    for i, (client, addr) in enumerate(clients):
+                        main = mains[addr]
+                        score = sum(valeur_carte(carte) for carte in main)
+                        classement[f"Joueur {i}"] = score
+
                 tour_actuel = (tour_actuel + 1) % len(clients)
                 envoyer_etat()
                 afficher_etat_serveur()

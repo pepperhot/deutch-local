@@ -1,3 +1,4 @@
-dict = {'a' : [1, 2, 3], 'b' : [4, 5, 6]}
-
-print(dict['a'][1])
+dict = {'Joueur 1': 25, 'Joueur 0': 43}
+for i, (nom, score) in enumerate(dict.items(), start=1):
+    texte = f"{i}. {nom} - {score} pts"
+    print(texte)
