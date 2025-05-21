@@ -118,15 +118,17 @@ def gerer_client(client, addr, joueur_id):
                 if not carte or carte in dame_used:
                     continue
                 with lock:
-                    if joueur_id == tour_actuel:
-                        if carte.startswith('D'):
-                            dame_used.append(carte)
-                            fosse.append(carte)
-                            tour_actuel = (tour_actuel + 1) % len(clients)
-                            envoyer_etat()
-                            afficher_etat_serveur()
+                    dame_used.append(carte)
+                    if not carte in fosse:
+                        fosse.append(carte)
+                    if carte in pioche:
+                        pioche.remove(carte)
+                    tour_actuel = (tour_actuel + 1) % len(clients)
+                    envoyer_etat()
+                    afficher_etat_serveur()
 
             elif message['type'] == 'valet':
+                print("valet")
                 carte = message.get('carte')
                 victime = message['victime']
                 idx_victime = message['index_victime']
@@ -135,20 +137,19 @@ def gerer_client(client, addr, joueur_id):
                 if not carte or carte in valet_used:
                     continue
                 with lock:
-                    if joueur_id == tour_actuel:
-                        valet_used.append(carte)
-                        mains[addr].remove(carte_attaquant)
-                        carte_victime = mains[joueur_socket[victime]][idx_victime]
-                        mains[joueur_socket[victime]].remove(carte_victime)
-                        mains[addr].insert(idx_attaquant, carte_victime)
-                        mains[joueur_socket[victime]].insert(idx_victime, carte_attaquant)
-                        if carte not in fosse:
-                            fosse.append(carte)
-                        else:
-                            continue
-                        tour_actuel = (tour_actuel + 1) % len(clients)
-                        envoyer_etat()
-                        afficher_etat_serveur()
+                    valet_used.append(carte)
+                    mains[addr].remove(carte_attaquant)
+                    carte_victime = mains[joueur_socket[victime]][idx_victime]
+                    mains[joueur_socket[victime]].remove(carte_victime)
+                    mains[addr].insert(idx_attaquant, carte_victime)
+                    mains[joueur_socket[victime]].insert(idx_victime, carte_attaquant)
+                    if carte not in fosse:
+                        fosse.append(carte)
+                    if carte in pioche:
+                        pioche.remove(carte)
+                    tour_actuel = (tour_actuel + 1) % len(clients)
+                    envoyer_etat()
+                    afficher_etat_serveur()
 
             elif message['type'] == 'red_ten':
                 carte = message['carte']
@@ -161,9 +162,9 @@ def gerer_client(client, addr, joueur_id):
                     victime_main = mains[joueur_socket[victime]]
                     carte_victime = victime_main.pop(idx_victime)
                     victime_main.insert(idx_victime, carte)
-                    if carte_victime not in fosse:
-                        fosse.append(carte_victime)
-                    else:return
+                    fosse.append(carte_victime)
+                    if ten_used in pioche:
+                        pioche.remove(ten_used)
                     tour_actuel = (tour_actuel + 1) % len(clients)
                     envoyer_etat()
                     afficher_etat_serveur()

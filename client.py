@@ -8,11 +8,6 @@ import threading
 HOST = 'localhost'
 PORT = 5000
 
-valeurs_cartes = {
-    '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10,
-    'V': 10, 'D': 10,
-    'A': 1
-}
 main_joueur = []
 pioche = []
 fosse = []
@@ -99,7 +94,7 @@ try:
                     ligne_left += 1
 
             for nom, main in autres_joueurs[moitie:]:
-                color = "red" if nom == f"Joueur {tour_actuel}" else "black"  # <-- Défini color ici aussi
+                color = "red" if nom == f"Joueur {tour_actuel}" else "black"
                 tk.Label(joueurs_frame_right, text=nom, fg=color, font=("Arial", 12, "bold")).grid(row=ligne_right, column=0, sticky='e')
                 ligne_right += 1
                 for i, carte in enumerate(main):
@@ -125,19 +120,16 @@ try:
             if numero_joueur is not None and tour_actuel is not None:
                 etat_tour.set("À vous de jouer" if numero_joueur == tour_actuel else "En attente du tour")
 
-            if numero_joueur == tour_actuel and carte_en_attente is None:
-                dame_carte = ""
+            dame_carte = None
 
-                if pioche and pioche[0].startswith("D") and pioche[0]:
-                    dame_carte = pioche[0]
-                if fosse and fosse[-1].startswith("D") and fosse[-1]:
-                    dame_carte = fosse[-1]
-
-                                    
-                if dame_carte:
-                    for i, visible in enumerate(visible_main):
-                        if not visible:
-                            tk.Button(btn_frame, text=f"👁 Voir {i + 1}", command=lambda idx=i, dc=dame_carte: utiliser_pouvoir_dame(idx, dc)).grid(row=2, column=i, pady=5)
+            if carte_en_attente == "pioche" and pioche and pioche[0] in ["D♠", "D♥", "D♦", "D♣"]:
+                dame_carte = pioche[0]
+            elif carte_en_attente == "fosse" and fosse and fosse[-1] in ["D♠", "D♥", "D♦", "D♣"]:
+                dame_carte = fosse[-1]
+            if dame_carte:
+                for i, visible in enumerate(visible_main):
+                    if not visible:
+                        tk.Button(btn_frame, text=f"👁 Voir {i + 1}", command=lambda idx=i, dc=dame_carte: utiliser_pouvoir_dame(idx, dc)).grid(row=2, column=i, pady=5)
 
             if numero_joueur == tour_actuel:
                 tk.Button(main_frame, text="🗑 Jeter la carte", command=jeter_carte).pack(pady=10)
@@ -203,6 +195,7 @@ try:
             return
         
         if valet_carte:
+            print("valet")
             carte_en_attente = valet_carte
 
             def utiliser_pouvoir_valet(idx_attaquant):
@@ -218,11 +211,10 @@ try:
                 s.send(json.dumps(envoi).encode())
                 carte_en_attente = None
                 maj_affichage()
-
+            print(1)
             for i, visible in enumerate(visible_main):
-                if visible:
-                    btn = tk.Button(btn_frame, text="🔄", command=lambda idx=i: utiliser_pouvoir_valet(idx))
-                    btn.grid(row=2, column=i, pady=5)
+                print(2)
+                tk.Button(btn_frame, text="🔄", command=lambda idx=i: utiliser_pouvoir_valet(idx)).grid(row=2, column=i, pady=5)
 
         if ten_carte:
             print("ten")
@@ -277,9 +269,11 @@ try:
         if source == "fosse" and not fosse:
             return
         carte_en_attente = source
+        maj_affichage()
         if source == "pioche" and pioche:
-            etat_pioche.set(f"Pioche : {pioche[0]}")
-            root.after(10000, lambda: etat_pioche.set("Pioche : ❓"))
+            carte = pioche[0]
+            if carte_en_attente:
+                etat_pioche.set(f"Pioche : {carte}")
 
     def deutch():
         global fin_deutch
@@ -301,7 +295,6 @@ try:
             bouton_quitter = tk.Button(canvas, text="Quitter", font=("Helvetica", 14), command=root.destroy)
             canvas.create_window(largeur // 2, hauteur - 50, window=bouton_quitter)
 
-
     def maj_donnees():
         global main_joueur, pioche, fosse, numero_joueur, tour_actuel, visible_main, action_effectuee, joueurs
         ancien_tour = None
@@ -321,7 +314,7 @@ try:
                 joueurs = infos.get('joueurs', {})
                 podium = infos['podium']
                 fin = infos['fin']
-                if podium:
+                if podium or main_joueur == []:
                     afficher_les_resultats(podium)
                 while len(visible_main) < len(main_joueur):
                     visible_main.append(False)
