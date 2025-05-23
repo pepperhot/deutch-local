@@ -1,5 +1,12 @@
-mon_dict = {'aba': 1, 'ana': 2, 'ava': 3, 'apa': 0}
+import socket
 
-dict_trie_par_valeur = dict(sorted(mon_dict.items(), key=lambda item: item[1]))
+s = socket.socket()
+s.bind(("localhost", 5000))
+s.listen(1)
+print("Serveur prêt")
+client, addr = s.accept()
+print("Client connecté")
 
-print(dict_trie_par_valeur)
+data = client.recv(1024)
+print("Reçu :", data.decode())
+client.close()
