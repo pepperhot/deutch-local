@@ -59,7 +59,7 @@ Cliquez sur **DEUTCH** pour déclencher le dernier tour. Le joueur avec le score
 
 Dans `client.py`, modifiez :
 ```python
-HOST = '192.168.1.10'  # IP du serveur
+HOST = '192.168.1.xx'  # IP du serveur
 PORT = 5000
 ```
 
@@ -76,7 +76,7 @@ Trouvez l'IP du serveur : `ipconfig` (Windows) ou `ifconfig` (Linux/Mac)
 
 ## 👥 Contributeurs
 
-**Lucas (pepperhot)** - Développeur principal
+**pepperhot** - Développeur principal
 
 ---
 
