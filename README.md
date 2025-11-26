@@ -1,47 +1,83 @@
-# deutch-local
+# 🎮 DEUTCH - Jeu de Cartes Multijoueur
 
-# 🃏 Jeu de Mémoire en Réseau (Python + Tkinter + Sockets)
+**Jeu de cartes de mémoire et stratégie en réseau local avec interface graphique moderne**
 
-Ce projet est un jeu de mémoire multijoueur développé en Python, utilisant **Tkinter** pour l'interface graphique et les **sockets TCP** pour la communication réseau. Chaque joueur doit se souvenir de ses cartes et prendre des décisions à son tour. Le but est de remplacer stratégiquement ses cartes pour optimiser son jeu.
+---
 
-## ✨ Fonctionnalités
+## 🚀 Démarrage Rapide
 
-- Interface graphique simple via Tkinter
-- Jeu multijoueur en réseau local via sockets
-- Cartes initiales masquées, visibles quelques secondes au début
-- Gestion d'une **pioche** et d'une **fosse**
-- Tour par tour, un seul joueur peut jouer à la fois
-- Cartes uniques pour chaque joueur
-- Affichage temps réel des états du jeu côté serveur
-
-## 📁 Structure du projet
-
-
-## 🧠 Règles du jeu
-
-1. Chaque joueur reçoit 5 cartes aléatoires qu’il peut voir pendant quelques secondes au début.
-2. Les cartes sont ensuite masquées.
-3. À son tour, un joueur peut :
-   - Prendre une carte de la **pioche**
-   - Ou prendre la dernière carte de la **fosse**
-4. Il doit alors **remplacer une de ses cartes**.
-5. La carte remplacée est envoyée à la **fosse**.
-6. Les tours s’enchaînent.
-
-## ▶️ Lancement
-
-### 1. Serveur
-
-Lancer sur l’ordinateur hôte :
-
+### 1. Lancer le serveur
 ```bash
 python server.py
 ```
 
-### 2. client
-
-Lancer sur l’ordinateur client :
-
+### 2. Lancer les clients
 ```bash
 python client.py
 ```
+
+### 3. Jouer
+- Entrez votre pseudo
+- Cliquez sur "Démarrer le jeu"
+- Attendez les autres joueurs et commencez !
+
+---
+
+## 🎯 Règles
+
+**Objectif :** Avoir le score le plus bas possible (5 cartes en main)
+
+### Tour de jeu
+1. **Piocher** une carte (pioche ou fosse)
+2. **Remplacer** une de vos cartes OU **Jeter** la carte piochée
+3. Votre tour se termine automatiquement
+
+### Cartes Spéciales
+- **Dame (D)** 👁️ : Voir une de vos cartes cachées (3 sec)
+- **Valet (V)** 🔄 : Échanger une carte avec un adversaire
+- **10♥/10♦** ⚡ : Forcer un adversaire à prendre votre carte
+- **Saute-mouton** 🐑 : Défausser si même valeur que la fosse (sinon +2 cartes)
+
+### Fin de partie
+Cliquez sur **DEUTCH** pour déclencher le dernier tour. Le joueur avec le score le plus bas gagne !
+
+---
+
+## 💯 Valeurs des Cartes
+
+| Carte | Points |
+|-------|--------|
+| As (A) | 1 |
+| 2-9 | 2-9 |
+| 10, V, D | 10 |
+| R♥/R♦ | 0 |
+| R♠/R♣ | 90 |
+
+---
+
+## 🌐 Jouer en Réseau Local
+
+Dans `client.py`, modifiez :
+```python
+HOST = '192.168.1.10'  # IP du serveur
+PORT = 5000
+```
+
+Trouvez l'IP du serveur : `ipconfig` (Windows) ou `ifconfig` (Linux/Mac)
+
+---
+
+## 🔧 Prérequis
+
+- Python 3.8+
+- Tkinter (inclus avec Python, ou `sudo apt-get install python3-tk` sur Linux)
+
+---
+
+## 👥 Contributeurs
+
+**Lucas (pepperhot)** - Développeur principal
+
+---
+
+**Bon jeu ! 🎉**
