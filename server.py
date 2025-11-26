@@ -166,10 +166,13 @@ def gerer_client(client, addr, joueur_id):
                         tour_actuel = (tour_actuel + 1) % len(clients)
                 elif mtype == 'mouton':
                     index = message['index']
-                    if 'carte' in message:
+                    reussi = message.get('reussi', False)
+                    if reussi and message.get('carte'):
+                        # Saute-mouton réussi : jeter la carte
                         carte = mains[addr].pop(index)
                         fosse.append(carte)
                     else:
+                        # Saute-mouton échoué : malus de +2 cartes
                         if len(pioche) >= 2:
                             mains[addr].extend([pioche.pop(0), pioche.pop(0)])
                     tour_actuel = (tour_actuel + 1) % len(clients)
@@ -182,7 +185,6 @@ def gerer_client(client, addr, joueur_id):
                         for i, (cli, a) in enumerate(clients):
                             score = sum(valeur_carte(c) for c in mains[a])
                             classement[pseudos[a]] = score
-                    tour_actuel = (tour_actuel + 1) % len(clients)
 
             envoyer_etat()
             afficher_etat_serveur()
